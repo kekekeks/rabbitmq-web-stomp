@@ -26,7 +26,13 @@
 -spec init() -> ok.
 init() ->
     Port = get_env(port, 55674),
+    HttpsPort = get_env(http_port, 55675),
     SockjsOpts = get_env(sockjs_opts, []) ++ [{logger, fun logger/3}],
+    HttpsEnabled = get_env(ssl_enabled, false),
+    SslCaCertFile = get_env(ssl_ca_certificate_file, "/etc/rabbitmq/ws_stomp/cacert.pem"),
+    SslCertFile = get_env(ssl_certificate_file, "/etc/rabbitmq/ws_stomp/cert.pem"),
+    SslKeyFile = get_env(ssl_key_file, "/etc/rabbitmq/ws_stomp/cert.key"),
+    SslKeyPassword = get_env(ssl_key_password, ""),
 
     SockjsState = sockjs_handler:init_state(
                     <<"/stomp">>, fun service_stomp/3, {}, SockjsOpts),
@@ -38,6 +44,19 @@ init() ->
     cowboy:start_listener(http, 100,
                           cowboy_tcp_transport, [{port,     Port}],
                           cowboy_http_protocol, [{dispatch, Routes}]),
+     if
+        HttpsEnabled == true ->
+            cowboy:start_listener(https, 100,
+                                  cowboy_ssl_transport, [
+                                        {port, HttpsPort}, {certfile, SslCertFile},
+                                        {keyfile, SslKeyFile}, {password, SslKeyPassword},
+                                        {cacertfile, SslCaCertFile}],
+                                  cowboy_http_protocol, [{dispatch, Routes}]),
+            rabbit_log:info("rabbit_web_stomp: started https on ~s:~w~n",
+                    ["0.0.0.0", HttpsPort]);
+        true ->
+            rabbit_log:info("rabbit_web_stomp:https is disabled")
+    end,
     ok.
 
 get_env(Key, Default) ->
