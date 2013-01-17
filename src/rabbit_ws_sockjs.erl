@@ -26,7 +26,7 @@
 -spec init() -> ok.
 init() ->
     Port = get_env(port, 55674),
-    HttpsPort = get_env(http_port, 55675),
+    HttpsPort = get_env(https_port, 55675),
     SockjsOpts = get_env(sockjs_opts, []) ++ [{logger, fun logger/3}],
     HttpsEnabled = get_env(ssl_enabled, false),
     SslCaCertFile = get_env(ssl_ca_certificate_file, "/etc/rabbitmq/ws_stomp/cacert.pem"),
