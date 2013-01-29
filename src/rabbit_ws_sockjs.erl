@@ -33,6 +33,8 @@ init() ->
     SslCertFile = get_env(ssl_certificate_file, "/etc/rabbitmq/ws_stomp/cert.pem"),
     SslKeyFile = get_env(ssl_key_file, "/etc/rabbitmq/ws_stomp/cert.key"),
     SslKeyPassword = get_env(ssl_key_password, ""),
+    HttpMaxConnections = get_env(http_max_connections, 1024),
+    HttpsMaxConnections = get_env(https_max_connections, 1024),
 
     SockjsState = sockjs_handler:init_state(
                     <<"/stomp">>, fun service_stomp/3, {}, SockjsOpts),
@@ -42,7 +44,7 @@ init() ->
     rabbit_log:info("rabbit_web_stomp: started on ~s:~w~n",
                     ["0.0.0.0", Port]),
     cowboy:start_listener(http, 100,
-                          cowboy_tcp_transport, [{port,     Port}],
+                          cowboy_tcp_transport, [{port,     Port}, {max_connections, HttpMaxConnections}],
                           cowboy_http_protocol, [{dispatch, Routes}]),
      if
         HttpsEnabled == true ->
@@ -50,7 +52,7 @@ init() ->
                                   cowboy_ssl_transport, [
                                         {port, HttpsPort}, {certfile, SslCertFile},
                                         {keyfile, SslKeyFile}, {password, SslKeyPassword},
-                                        {cacertfile, SslCaCertFile}],
+                                        {cacertfile, SslCaCertFile}, {max_connections, HttpsMaxConnections}],
                                   cowboy_http_protocol, [{dispatch, Routes}]),
             rabbit_log:info("rabbit_web_stomp: started https on ~s:~w~n",
                     ["0.0.0.0", HttpsPort]);
