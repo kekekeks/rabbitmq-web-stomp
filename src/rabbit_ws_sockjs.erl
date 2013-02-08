@@ -30,14 +30,12 @@ init() ->
 
     SockjsState = sockjs_handler:init_state(
                     <<"/stomp">>, fun service_stomp/3, {}, SockjsOpts),
-    VhostRoutes = [{[<<"stomp">>, '...'], sockjs_cowboy_handler, SockjsState}],
-    Routes = [{'_',  VhostRoutes}], % any vhost
-
+    VhostRoutes = [{"/stomp", sockjs_cowboy_handler, SockjsState}],
+    Dispatch = cowboy_router:compile([{'_',  VhostRoutes}]), % any vhost
+    cowboy:start_http(http, 100, [{port, Port}],
+                      [{env, [{dispatch, Dispatch}]}]),
     rabbit_log:info("rabbit_web_stomp: started on ~s:~w~n",
                     ["0.0.0.0", Port]),
-    cowboy:start_listener(http, 100,
-                          cowboy_tcp_transport, [{port,     Port}],
-                          cowboy_http_protocol, [{dispatch, Routes}]),
     ok.
 
 get_env(Key, Default) ->
