@@ -26,7 +26,9 @@
 -spec init() -> ok.
 init() ->
     Port = get_env(port, 55674),
-    SockjsOpts = get_env(sockjs_opts, []) ++ [{logger, fun logger/3}],
+    SockjsOpts = get_env(sockjs_opts, []) ++
+                 [{logger, fun logger/3},
+                  {subproto_pref, [<<"v11.stomp">>, <<"v10.stomp">>]}],
 
     SockjsState = sockjs_handler:init_state(
                     <<"/stomp">>, fun service_stomp/3, {}, SockjsOpts),
